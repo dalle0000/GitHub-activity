@@ -1,0 +1,32 @@
+name: GitHub activity data as a measure of developer activity
+
+on:
+  schedule:
+  - cron: '0 * * * *'
+
+jobs:
+  stale:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: GitHub activity
+        run: |
+          git config --local user.email "${{ secrets.USER_EMAIL }}"
+          git config --local user.name "${{ secrets.USER_NAME }}"
+          git remote set-url origin https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git pull --rebase
+          git commit --allow-empty -m "使用您的 GitHub 活动数据作为开发人员活动的度量"
+          git push
+      - name: Release
+        if: ${{ github.event.inputs.release != 'none' }}
+        uses: ncipollo/release-action@v1.13.0
+        with:
+          artifacts: "**/*.txt"
+          prerelease: ${{ github.event.inputs.release == 'pre-release' }}
+          makeLatest: ${{ github.event.inputs.release == 'release' }}
+          allowUpdates: "true"
+          tag: version.txt
